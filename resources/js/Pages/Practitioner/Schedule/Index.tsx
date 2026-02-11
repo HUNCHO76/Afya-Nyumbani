@@ -19,7 +19,7 @@ const PractitionerScheduleIndex = ({ upcoming }: any) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation isSidebarCollapsed={isSidebarCollapsed} />
+      <Navigation isSidebarCollapsed={isSidebarCollapsed} onToggleSidebar={handleToggleSidebar} />
       <MainSidebar isCollapsed={isSidebarCollapsed} onToggleCollapse={handleToggleSidebar} />
 
       <div className={`transition-all duration-300 ease-out pt-16 ${isSidebarCollapsed ? 'lg:ml-[88px]' : 'lg:ml-[280px]'}`}>
@@ -49,13 +49,13 @@ const PractitionerScheduleIndex = ({ upcoming }: any) => {
 
                       {booking.status !== 'cancelled' && booking.status !== 'in_progress' && (
                         <form method="post" action={`/practitioner/appointments/${booking.id}/start`}>
-                          <input type="hidden" name="_token" value={(window as any).Laravel?.csrfToken} />
+                          <input type="hidden" name="_token" value={document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''} />
                           <Button type="submit" size="sm" variant="secondary">Start Visit</Button>
                         </form>
                       )}
 
                       <form method="post" action={`/practitioner/appointments/${booking.id}/confirm`}>
-                        <input type="hidden" name="_token" value={(window as any).Laravel?.csrfToken} />
+                        <input type="hidden" name="_token" value={document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''} />
                         <Button type="submit" size="sm">Confirm</Button>
                       </form>
                     </div>

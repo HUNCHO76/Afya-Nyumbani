@@ -50,7 +50,7 @@ const PractitionerDashboard = ({
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navigation isSidebarCollapsed={isSidebarCollapsed} onToggleSidebar={handleToggleSidebar} />
       
       <MainSidebar
         isCollapsed={isSidebarCollapsed}

@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Client;
+use App\Models\Practitioner;
 use App\Models\Service;
 use App\Models\InsuranceApproval;
 use App\Models\Payment;
-use App\Services\AirtimeService;
 use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -45,16 +45,19 @@ class BookingController extends Controller
             'service_id' => 'required|exists:services,id',
             'booking_date' => 'required|date|after_or_equal:today',
             'booking_time' => 'required',
-            'payment_type' => 'required|in:cash,insurance',
+            'payment_type' => 'required|in:mobile_money,cash,insurance',
             'insurance_provider' => 'required_if:payment_type,insurance',
             'insurance_number' => 'required_if:payment_type,insurance',
-            'location_city' => 'nullable|string',
-            'location_area' => 'nullable|string',
+            'payer_phone' => 'required_if:payment_type,mobile_money|regex:/^\+255\d{9}$/',
+            'location_region' => 'nullable|string',
+            'location_district' => 'nullable|string',
+            'location_ward' => 'nullable|string',
+            'location_landmark' => 'nullable|string',
             'location_address' => 'nullable|string',
             'location_lat' => 'nullable|numeric',
             'location_lng' => 'nullable|numeric',
             'special_instructions' => 'nullable|string',
-            'payment_method' => 'required_if:payment_type,cash|in:mpesa,tigopesa,airtelmoney,cash',
+            'payment_method' => 'required_if:payment_type,mobile_money|in:mpesa,tigopesa,airtelmoney,cash',
         ]);
 
         $client = Auth::user()->client;
@@ -66,12 +69,29 @@ class BookingController extends Controller
         DB::beginTransaction();
         
         try {
-            // Build location address from city and area if provided
-            $locationAddress = $validated['location_address'] ?? null;
-            if ($validated['location_city'] && $validated['location_area']) {
-                $locationAddress = "{$validated['location_area']}, {$validated['location_city']}";
-            } elseif ($validated['location_city']) {
-                $locationAddress = $validated['location_city'];
+            // Build location address from detailed fields if provided
+            $locationParts = array_filter([
+                $validated['location_address'] ?? null,
+                $validated['location_landmark'] ?? null,
+                $validated['location_ward'] ?? null,
+                $validated['location_district'] ?? null,
+                $validated['location_region'] ?? null,
+            ]);
+
+            $locationAddress = !empty($locationParts) ? implode(', ', $locationParts) : null;
+
+            // Auto-assign a practitioner (Logic: Assign to the currently logged-in user if they are also a practitioner,
+            // otherwise assign to the first available practitioner for testing/demo purposes)
+            $assignedPractitionerId = null;
+            $user = Auth::user();
+            
+            // Check if current user is also a practitioner
+            if ($user->practitioner) {
+                $assignedPractitionerId = $user->practitioner->id;
+            } else {
+                // Fallback: Assign to the first available practitioner
+                $assignedPractitionerId = Practitioner::where('availability_status', 'available')->first()?->id 
+                    ?? Practitioner::first()?->id;
             }
 
             // Create the booking
@@ -80,12 +100,13 @@ class BookingController extends Controller
                 'service_id' => $validated['service_id'],
                 'booking_date' => $validated['booking_date'],
                 'booking_time' => $validated['booking_time'],
-                'status' => $validated['payment_type'] === 'insurance' ? 'pending' : 'confirmed',
+                'status' => 'pending',
                 'location_address' => $locationAddress,
                 'location_lat' => $validated['location_lat'] ?? null,
                 'location_lng' => $validated['location_lng'] ?? null,
                 'payment_type' => $validated['payment_type'],
                 'special_instructions' => $validated['special_instructions'] ?? null,
+                'assigned_practitioner_id' => $assignedPractitionerId,
             ]);
 
             $service = Service::findOrFail($validated['service_id']);
@@ -114,33 +135,25 @@ class BookingController extends Controller
                 $smsService = new SmsService();
                 $smsService->sendBookingConfirmation($booking);
 
-                // Send airtime reward
-                $airtime = new AirtimeService();
-                $rewardAmount = (float) config('services.airtime.reward_amount', 100);
-                $currency = config('services.airtime.currency', 'TZS');
-                $phone = $client->user->phone ?? $client->emergency_contact_phone;
-                if (!empty($phone)) {
-                    $airtime->sendAirtime($phone, $rewardAmount, $currency);
-                }
-                
                 return redirect()->route('client.dashboard')->with('success', 
                     'Booking created successfully! Your insurance approval is pending. You will be notified once approved.');
                 
             } else {
+                $paymentMethod = $validated['payment_method'] ?? 'cash';
                 // Mobile money payment - mark as paid immediately
-                $paymentStatus = in_array($validated['payment_method'], ['mpesa', 'tigopesa', 'airtelmoney']) ? 'completed' : 'pending';
+                $paymentStatus = in_array($paymentMethod, ['mpesa', 'tigopesa', 'airtelmoney']) ? 'completed' : 'pending';
                 
                 // Generate control number for mobile money payments
                 $controlNumber = null;
                 if ($paymentStatus === 'completed') {
-                    $controlNumber = $this->generateControlNumber($booking->id, $validated['payment_method']);
+                    $controlNumber = $this->generateControlNumber($booking->id, $paymentMethod);
                 }
                 
                 $payment = Payment::create([
                     'booking_id' => $booking->id,
                     'client_id' => $client->id,
                     'amount' => $service->price,
-                    'payment_method' => $validated['payment_method'],
+                    'payment_method' => $paymentMethod,
                     'status' => $paymentStatus,
                     'transaction_reference' => $controlNumber,
                     'paid_at' => $paymentStatus === 'completed' ? now() : null,
@@ -159,25 +172,17 @@ class BookingController extends Controller
                     $smsService->sendPaymentReminder($payment);
                 }
 
-                // Send airtime reward
-                $airtime = new AirtimeService();
-                $rewardAmount = (float) config('services.airtime.reward_amount', 100);
-                $currency = config('services.airtime.currency', 'TZS');
-                $phone = $client->user->phone ?? $client->emergency_contact_phone;
-                if (!empty($phone)) {
-                    $airtime->sendAirtime($phone, $rewardAmount, $currency);
-                }
-                
-                // Redirect based on payment status
-                if ($paymentStatus === 'completed') {
-                    return redirect()->route('client.dashboard')->with('success',
-                        'Booking created and payment confirmed! You will receive SMS confirmation shortly.');
-                } else {
-                    return redirect()->route('client.payments.show', $payment->id)->with('success',
-                        'Booking created successfully! Please complete your payment.');
-                }
-            }
-            
+                /* 
+                // Send airtime reward - Service temporarily disabled
+                //$airtime = new AirtimeService();
+                //$rewardAmount = (float) config('services.airtime.reward_amount', 100);
+                //$currency = config('services.airtime.currency', 'TZS');
+                //$phone = $client->user->phone ?? $client->emergency_contact_phone;
+                //if (!empty($phone)) {
+                //    $airtime->sendAirtime($phone, $rewardAmount, $currency);
+                //}
+                */
+            } // End else
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Failed to create booking. Please try again.']);
@@ -211,6 +216,102 @@ class BookingController extends Controller
         return Inertia::render('Client/AppointmentDetails', [
             'booking' => $booking,
         ]);
+    }
+
+    public function edit(Booking $booking)
+    {
+        // Ensure the booking belongs to the authenticated client
+        if ($booking->client_id !== Auth::user()->client->id) {
+            abort(403, 'Unauthorized access to this booking.');
+        }
+
+        // Only allow editing of pending or confirmed bookings
+        if (!in_array($booking->status, ['pending', 'confirmed'])) {
+            return redirect()->route('client.bookings.show', $booking)
+                ->withErrors(['error' => 'This booking cannot be edited.']);
+        }
+
+        $services = Service::all();
+        $client = Auth::user()->client;
+        
+        $clientInsuranceStatus = null;
+        if ($client) {
+            $clientInsuranceStatus = [
+                'hasInsurance' => !empty($client->insurance_number),
+                'provider' => $client->insurance_provider,
+                'insuranceNumber' => $client->insurance_number,
+                'status' => $client->insurance_status,
+            ];
+        }
+
+        $booking->load(['service', 'practitioner.user', 'insuranceApproval']);
+        
+        return Inertia::render('Client/EditBooking', [
+            'booking' => $booking,
+            'services' => $services,
+            'clientInsuranceStatus' => $clientInsuranceStatus,
+        ]);
+    }
+
+    public function update(Request $request, Booking $booking)
+    {
+        // Ensure the booking belongs to the authenticated client
+        if ($booking->client_id !== Auth::user()->client->id) {
+            abort(403, 'Unauthorized access to this booking.');
+        }
+
+        // Only allow editing of pending or confirmed bookings
+        if (!in_array($booking->status, ['pending', 'confirmed'])) {
+            return back()->withErrors(['error' => 'This booking cannot be edited.']);
+        }
+
+        $validated = $request->validate([
+            'service_id' => 'required|exists:services,id',
+            'booking_date' => 'required|date|after_or_equal:today',
+            'booking_time' => 'required',
+            'location_region' => 'nullable|string',
+            'location_district' => 'nullable|string',
+            'location_ward' => 'nullable|string',
+            'location_landmark' => 'nullable|string',
+            'location_address' => 'nullable|string',
+            'location_lat' => 'nullable|numeric',
+            'location_lng' => 'nullable|numeric',
+            'special_instructions' => 'nullable|string',
+        ]);
+
+        DB::beginTransaction();
+        
+        try {
+            // Build location address from detailed fields if provided
+            $locationParts = array_filter([
+                $validated['location_address'] ?? null,
+                $validated['location_landmark'] ?? null,
+                $validated['location_ward'] ?? null,
+                $validated['location_district'] ?? null,
+                $validated['location_region'] ?? null,
+            ]);
+
+            $locationAddress = !empty($locationParts) ? implode(', ', $locationParts) : null;
+
+            $booking->update([
+                'service_id' => $validated['service_id'],
+                'booking_date' => $validated['booking_date'],
+                'booking_time' => $validated['booking_time'],
+                'location_address' => $locationAddress,
+                'location_lat' => $validated['location_lat'] ?? null,
+                'location_lng' => $validated['location_lng'] ?? null,
+                'special_instructions' => $validated['special_instructions'] ?? null,
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('client.bookings.show', $booking)
+                ->with('success', 'Booking updated successfully.');
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to update booking. Please try again.']);
+        }
     }
 
     public function cancel(Booking $booking)

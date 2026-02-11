@@ -61,7 +61,7 @@ const PractitionerPatientsIndex = ({ patients }: Props) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation isSidebarCollapsed={isSidebarCollapsed} />
+      <Navigation isSidebarCollapsed={isSidebarCollapsed} onToggleSidebar={handleToggleSidebar} />
       
       <MainSidebar
         isCollapsed={isSidebarCollapsed}
@@ -93,52 +93,57 @@ const PractitionerPatientsIndex = ({ patients }: Props) => {
               </div>
             </div>
 
-            {/* Patients Grid */}
+            {/* Patients Table */}
             {filteredPatients.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredPatients.map((patient) => (
-                  <div
-                    key={patient.id}
-                    className="rounded-lg border bg-card p-6 hover:shadow-lg transition-shadow"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center">
-                          <User className="h-6 w-6 text-primary-foreground" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-foreground">
-                            {patient.user.name}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {calculateAge(patient.date_of_birth)} years old
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Activity className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Blood Type:</span>
-                        <span className="font-medium">{patient.blood_type || 'N/A'}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Total Visits:</span>
-                        <span className="font-medium">{patient.visits_count}</span>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t">
-                      <Link href={`/practitioner/patients/${patient.id}`}>
-                        <Button className="w-full" variant="default">
-                          View Details
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+              <div className="rounded-lg border bg-card overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-6 py-3 text-left text-sm font-semibold">Patient Name</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold">Age</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold">Blood Type</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold">Total Visits</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold">Emergency Contact</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredPatients.map((patient) => (
+                        <tr key={patient.id} className="border-b hover:bg-muted/30 transition-colors">
+                          <td className="px-6 py-4 text-sm font-medium">{patient.user.name}</td>
+                          <td className="px-6 py-4 text-sm text-muted-foreground">{patient.user.email}</td>
+                          <td className="px-6 py-4 text-sm">{calculateAge(patient.date_of_birth)} years</td>
+                          <td className="px-6 py-4 text-sm">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {patient.blood_type || 'N/A'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <span className="inline-flex items-center gap-1">
+                              <Activity className="h-4 w-4 text-muted-foreground" />
+                              {patient.visits_count}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <div className="text-muted-foreground">
+                              <p>{patient.emergency_contact_name}</p>
+                              <p className="text-xs">{patient.emergency_contact_phone}</p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <Link href={`/practitioner/patients/${patient.id}`}>
+                              <Button size="sm" variant="outline">
+                                View
+                              </Button>
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : (
               <div className="text-center py-12 bg-card rounded-lg border">

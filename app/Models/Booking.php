@@ -19,6 +19,7 @@ class Booking extends Model
         'booking_date',
         'booking_time',
         'status',
+        'location_address',
         'location_lat',
         'location_lng',
         'assigned_practitioner_id',

@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { Link, usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
-import { Heart, Menu, X, Phone, Clock, LogOut } from "lucide-react";
+import { Heart, Menu, X, Phone, Clock, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavigationProps {
   className?: string;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
-export const Navigation = ({ className }: NavigationProps) => {
+export const Navigation = ({ className, isSidebarCollapsed = false, onToggleSidebar }: NavigationProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { auth } = usePage().props;
   const isAuthenticated = !!auth?.user;
@@ -16,15 +18,22 @@ export const Navigation = ({ className }: NavigationProps) => {
   return (
     <nav className={cn("bg-card shadow-card border-b border-border", className)}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex items-center space-x-2">
+        <div className="flex justify-end space-x-5 items-center h-16">
+          {/* Sidebar Toggle Button - Visible when sidebar is collapsed on desktop */}
+          {isAuthenticated && onToggleSidebar && isSidebarCollapsed && (
+            <button
+              onClick={onToggleSidebar}
+              className="hidden lg:flex items-center justify-center w-10 h-10 rounded-lg hover:bg-muted transition-colors"
+              title="Open sidebar"
+            >
+              <PanelLeftOpen className="w-5 h-5 text-foreground" />
+            </button>
+          )}
+          
+          {/* Logo - Icon Only */}
+          <div className="flex items-center justify-center">
             <div className="flex items-center justify-center w-10 h-10 bg-gradient-primary rounded-lg">
               <Heart className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Afya-Home-Care</h1>
-              <p className="text-xs text-muted-foreground">Home Nursing Care</p>
             </div>
           </div>
 
@@ -42,12 +51,6 @@ export const Navigation = ({ className }: NavigationProps) => {
                 <div className="flex items-center space-x-2 text-sm">
                   <span className="text-muted-foreground">Welcome, {auth?.user?.name || 'User'}</span>
                 </div>
-                <form method="POST" action="/logout" style={{ display: 'inline' }}>
-                  <button type="submit" className="px-4 py-2 bg-transparent border border-input rounded-md hover:bg-accent flex items-center space-x-2 text-sm">
-                    <LogOut className="w-4 h-4" />
-                    <span>Logout</span>
-                  </button>
-                </form>
               </>
             ) : (
               // Guest Navigation
@@ -81,16 +84,27 @@ export const Navigation = ({ className }: NavigationProps) => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
+          <div className="flex items-center gap-2 md:hidden">
+            {isAuthenticated && onToggleSidebar && (
+              <button
+                className="p-2"
+                onClick={onToggleSidebar}
+                title={isSidebarCollapsed ? "Open sidebar" : "Close sidebar"}
+              >
+                <PanelLeftOpen className={cn("w-6 h-6 text-foreground transition-transform", !isSidebarCollapsed && "rotate-180")} />
+              </button>
+            )}
+            <button
+              className="p-2"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
             {isMenuOpen ? (
               <X className="w-6 h-6 text-foreground" />
             ) : (
               <Menu className="w-6 h-6 text-foreground" />
             )}
-          </button>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -107,13 +121,7 @@ export const Navigation = ({ className }: NavigationProps) => {
                     Profile
                   </Link>
                   <div className="text-sm text-muted-foreground py-2 border-t border-border">
-                    <p className="mb-3">Welcome, {auth?.user?.name || 'User'}</p>
-                    <form method="POST" action="/logout" style={{ display: 'block' }}>
-                      <button type="submit" className="w-full px-4 py-2 bg-transparent border border-input rounded-md hover:bg-accent flex items-center justify-center space-x-2 text-sm">
-                        <LogOut className="w-4 h-4" />
-                        <span>Logout</span>
-                      </button>
-                    </form>
+                    <p>Welcome, {auth?.user?.name || 'User'}</p>
                   </div>
                 </>
               ) : (
@@ -150,7 +158,7 @@ export const Navigation = ({ className }: NavigationProps) => {
                       <span>24/7 Available</span>
                     </div>
                   </div>
-                  <Link href="/auth">
+                  <Link href="/login">
                     <Button variant="default" className="w-full bg-gradient-primary shadow-primary">
                       Login
                     </Button>

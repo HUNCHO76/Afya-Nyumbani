@@ -43,19 +43,4 @@ return [
         'api_url' => env('SMS_API_URL', 'https://api.africastalking.com/version1/messaging'),
     ],
 
-    'airtime' => [
-        'api_key' => env('AIRTIME_API_KEY'),
-        'username' => env('AIRTIME_USERNAME', 'sandbox'),
-        'currency' => env('AIRTIME_CURRENCY', 'TZS'),
-        'reward_amount' => env('AIRTIME_REWARD_AMOUNT', 500),
-        'default_phone' => env('AIRTIME_DEFAULT_PHONE', '+255686081750'),
-    ],
-
-    'voice' => [
-        'api_key' => env('VOICE_API_KEY'),
-        'username' => env('VOICE_USERNAME', 'sandbox'),
-        'call_from' => env('VOICE_CALL_FROM'),
-        'default_phone' => env('VOICE_DEFAULT_PHONE', '+255686081750'),
-    ],
-
 ];

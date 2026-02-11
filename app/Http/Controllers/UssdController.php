@@ -8,7 +8,6 @@ use App\Models\Service;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Services\SmsService;
-use App\Services\AirtimeService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -196,11 +195,6 @@ class UssdController extends Controller
                 $sms = new SmsService();
                 $sms->sendBookingConfirmation($booking);
                 $sms->sendPaymentConfirmation($payment);
-
-                // Send airtime reward
-                $airtimeService = new AirtimeService();
-                $phone = $user->phone ?? config('services.airtime.default_phone');
-                $airtimeService->sendAirtime($phone);
 
                 $methodName = match ($paymentMethod) {
                     'mpesa' => 'M-Pesa',

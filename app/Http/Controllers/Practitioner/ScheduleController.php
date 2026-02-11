@@ -148,9 +148,24 @@ class ScheduleController extends Controller
             return redirect()->route('visits.show', $existing);
         }
 
+        // Get or create Patient record for the client's user
+        $client = $booking->client;
+        $patient = \App\Models\Patient::firstOrCreate(
+            ['user_id' => $client->user_id],
+            [
+                'date_of_birth' => $client->date_of_birth ?? now()->subYears(30),
+                'blood_type' => null,
+                'allergies' => [],
+                'medical_conditions' => [],
+                'emergency_contact_name' => $client->emergency_contact_name ?? 'N/A',
+                'emergency_contact_phone' => $client->emergency_contact_phone ?? 'N/A',
+                'notes' => $client->medical_notes,
+            ]
+        );
+
         $visit = \App\Models\Visit::create([
             'booking_id' => $booking->id,
-            'patient_id' => $booking->client_id,
+            'patient_id' => $patient->id,
             'practitioner_id' => $practitioner->id,
             'visit_notes' => null,
         ]);

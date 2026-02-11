@@ -4,7 +4,7 @@ import { Navigation } from '@/Components/Navigation';
 import BreadcrumbTrail from '@/Components/navigation/BreadcrumbTrail';
 import Icon from '@/Components/AppIcon';
 import { Button } from '@/components/ui/button';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 
 interface Activity {
   id: string;
@@ -76,12 +76,39 @@ const ClientDashboard = () => {
     stats = { totalBookings: 0, completedBookings: 0, pendingPayments: 0 },
   } = props;
 
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('sidebar_collapsed') === 'true'; } catch { return false; }
+  });
+
+  const handleToggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      try { localStorage.setItem('sidebar_collapsed', next ? 'true' : 'false'); } catch {}
+      return next;
+    });
+  };
+
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'confirmed'>('all');
 
   // Filter bookings by status
   const pendingBookings = upcomingBookings.filter(b => b.status.toLowerCase() === 'pending');
   const confirmedBookings = upcomingBookings.filter(b => b.status.toLowerCase() === 'confirmed');
   const allUpcoming = [...confirmedBookings, ...pendingBookings];
+
+  // Filter bookings based on active tab
+  const getFilteredBookings = () => {
+    switch (activeTab) {
+      case 'pending':
+        return pendingBookings;
+      case 'confirmed':
+        return confirmedBookings;
+      case 'all':
+      default:
+        return allUpcoming;
+    }
+  };
+
+  const filteredBookings = getFilteredBookings();
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -141,13 +168,13 @@ const ClientDashboard = () => {
     <div className="min-h-screen bg-background">
       <MainSidebar
         isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        onToggleCollapse={handleToggleSidebar}
       />
 
       <div className={`transition-all duration-250 ease-out ${isSidebarCollapsed ? 'lg:ml-[88px]' : 'lg:ml-[280px]'}`}>
-        <Navigation />
+        <Navigation isSidebarCollapsed={isSidebarCollapsed} onToggleSidebar={handleToggleSidebar} />
         
-        <main className="pt-16 min-h-screen">
+        <main className="pt-5 min-h-screen">
           <div className="p-4 md:p-6 lg:p-8">
             <BreadcrumbTrail />
             
@@ -287,22 +314,42 @@ const ClientDashboard = () => {
                     )}
                   </div>
 
-                  {/* Status Tabs */}
-                  <div className="flex gap-2 mb-4 border-b border-border pb-2">
-                    <button className="px-4 py-2 text-sm font-medium text-foreground border-b-2 border-primary">
-                      All ({allUpcoming.length})
-                    </button>
-                    <button className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                      Pending ({pendingBookings.length})
-                    </button>
-                    <button className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                      Confirmed ({confirmedBookings.length})
-                    </button>
-                  </div>
-
+                    {/* Status Tabs */}
+                    <div className="flex gap-2 mb-4 border-b border-border pb-2 overflow-x-auto">
+                      <button 
+                        onClick={() => setActiveTab('all')}
+                        className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                          activeTab === 'all'
+                            ? 'text-foreground border-b-2 border-primary'
+                            : 'text-muted-foreground hover:text-foreground border-b-2 border-transparent'
+                        }`}
+                      >
+                        All ({allUpcoming.length})
+                      </button>
+                      <button 
+                        onClick={() => setActiveTab('pending')}
+                        className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                          activeTab === 'pending'
+                            ? 'text-foreground border-b-2 border-primary'
+                            : 'text-muted-foreground hover:text-foreground border-b-2 border-transparent'
+                        }`}
+                      >
+                        Pending ({pendingBookings.length})
+                      </button>
+                      <button 
+                        onClick={() => setActiveTab('confirmed')}
+                        className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                          activeTab === 'confirmed'
+                            ? 'text-foreground border-b-2 border-primary'
+                            : 'text-muted-foreground hover:text-foreground border-b-2 border-transparent'
+                        }`}
+                      >
+                        Confirmed ({confirmedBookings.length})
+                      </button>
+                    </div>
                   <div className="space-y-3">
-                    {allUpcoming.length > 0 ? (
-                      allUpcoming.map((booking, index) => (
+                    {filteredBookings.length > 0 ? (
+                      filteredBookings.map((booking, index) => (
                         <div 
                           key={booking.id} 
                           className={`group p-4 border rounded-lg transition-all duration-200 ${
@@ -350,27 +397,36 @@ const ClientDashboard = () => {
                             </span>
                           </div>
                           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                            <Link href={`/client/bookings/${booking.id}`} className="flex-1">
-                              <Button variant="outline" size="sm" className="w-full">
-                                <Icon name="Eye" size={14} className="mr-1" />
-                                View Details
-                              </Button>
-                            </Link>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full flex-1"
+                              onClick={() => router.visit(`/client/bookings/${booking.id}`)}
+                            >
+                              <Icon name="Eye" size={14} className="mr-1" />
+                              View Details
+                            </Button>
                             {booking.status.toLowerCase() === 'pending' && (
-                              <Link href={`/client/bookings/${booking.id}/edit`} className="flex-1">
-                                <Button variant="outline" size="sm" className="w-full border-warning/30 hover:bg-warning/10">
-                                  <Icon name="Edit2" size={14} className="mr-1" />
-                                  Edit Booking
-                                </Button>
-                              </Link>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full flex-1 border-warning/30 hover:bg-warning/10"
+                                onClick={() => router.visit(`/client/bookings/${booking.id}/edit`)}
+                              >
+                                <Icon name="Edit2" size={14} className="mr-1" />
+                                Edit Booking
+                              </Button>
                             )}
                             {booking.status.toLowerCase() === 'confirmed' && (
-                              <Link href={`/client/bookings/${booking.id}/edit`} className="flex-1">
-                                <Button variant="outline" size="sm" className="w-full">
-                                  <Icon name="Calendar" size={14} className="mr-1" />
-                                  Reschedule
-                                </Button>
-                              </Link>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full flex-1"
+                                onClick={() => router.visit(`/client/bookings/${booking.id}/edit`)}
+                              >
+                                <Icon name="Calendar" size={14} className="mr-1" />
+                                Reschedule
+                              </Button>
                             )}
                           </div>
                         </div>

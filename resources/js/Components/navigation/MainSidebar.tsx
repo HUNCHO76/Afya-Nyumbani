@@ -490,11 +490,20 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ isCollapsed, onToggleCollapse
               isActive
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-              isCollapsed && 'justify-center',
+              isCollapsed && 'justify-center px-0',
               depth > 0 && 'ml-4'
             )}
           >
-            {item.icon}
+            <div className={cn(
+              'flex items-center justify-center flex-shrink-0',
+              isCollapsed && 'w-8 h-8'
+            )}>
+              {React.cloneElement(item.icon as React.ReactElement, {
+                className: cn(
+                  isCollapsed ? 'w-6 h-6' : 'w-5 h-5'
+                )
+              })}
+            </div>
             {!isCollapsed && (
               <>
                 <span className="font-medium flex-1 text-left">{item.title}</span>
@@ -524,11 +533,20 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ isCollapsed, onToggleCollapse
           isActive
             ? 'bg-primary text-primary-foreground'
             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-          isCollapsed && 'justify-center',
+          isCollapsed && 'justify-center px-0',
           depth > 0 && 'ml-4'
         )}
       >
-        {item.icon}
+        <div className={cn(
+          'flex items-center justify-center flex-shrink-0',
+          isCollapsed && 'w-8 h-8'
+        )}>
+          {React.cloneElement(item.icon as React.ReactElement, {
+            className: cn(
+              isCollapsed ? 'w-6 h-6' : 'w-5 h-5'
+            )
+          })}
+        </div>
         {!isCollapsed && (
           <>
             <span className="font-medium">{item.title}</span>
@@ -620,21 +638,20 @@ const MainSidebar: React.FC<MainSidebarProps> = ({ isCollapsed, onToggleCollapse
           ))}
         </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-border mt-auto sticky bottom-0 bg-background">
-          <Link
-            href="/logout"
-            method="post"
-            as="button"
-            className={cn(
-              'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-muted-foreground hover:bg-destructive/10 hover:text-destructive',
-              isCollapsed && 'justify-center'
-            )}
-          >
-            <LogOut className="w-5 h-5" />
-            {!isCollapsed && <span className="font-medium">Logout</span>}
-          </Link>
-        </div>
+        {/* Logout - Only shown when sidebar is expanded */}
+        {!isCollapsed && (
+          <div className="p-4 border-t border-border mt-auto sticky bottom-0 bg-background">
+            <Link
+              href="/logout"
+              method="post"
+              as="button"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Logout</span>
+            </Link>
+          </div>
+        )}
 
         {/* Toggle Button */}
         <button

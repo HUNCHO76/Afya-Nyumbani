@@ -113,7 +113,7 @@ const PractitionerPatientShow = ({ patient }: Props) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation isSidebarCollapsed={isSidebarCollapsed} />
+      <Navigation isSidebarCollapsed={isSidebarCollapsed} onToggleSidebar={handleToggleSidebar} />
       
       <MainSidebar
         isCollapsed={isSidebarCollapsed}

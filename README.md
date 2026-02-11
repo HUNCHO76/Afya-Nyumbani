@@ -1,6 +1,6 @@
 # Afya Nyumbani - Home Healthcare System
 
-A comprehensive home healthcare management system built with Laravel 12, Inertia.js, React, and TypeScript. Enables seamless booking of healthcare services with integrated mobile money payments, SMS notifications, and voice communications.
+A comprehensive home healthcare management system built with Laravel 12, Inertia.js, React, and TypeScript. Enables seamless booking of healthcare services with integrated mobile money payments and SMS notifications.
 
 ## Features
 
@@ -21,22 +21,11 @@ A comprehensive home healthcare management system built with Laravel 12, Inertia
   - Booking confirmations with service details
   - Payment confirmations with control numbers
   - Payment reminders for pending payments
-  - Airtime rewards notifications
   
 - **USSD Booking Flow**: 
   - Service selection via USSD menu
   - Booking creation and payment in one flow
   - Control number generation for reference
-  
-- **Voice API**: 
-  - Outbound call capabilities
-  - IVR callback handling
-  - Voice notifications for important updates
-  
-- **Airtime Rewards**:
-  - Automatic 500 TZS airtime reward after booking
-  - Airtime validation and status callbacks
-  - Transaction tracking and logging
 
 ### Dashboard & Analytics
 - **Client Dashboard**: 
@@ -69,7 +58,7 @@ A comprehensive home healthcare management system built with Laravel 12, Inertia
 
 ### Third-Party Services
 - **Africa's Talking**: SMS, USSD, Voice, and Airtime API
-- **ngrok**: Webhook tunneling for development
+- **ngrok**: Webhook tunneling for and USSD
 
 ## Installation & Setup
 
@@ -79,7 +68,7 @@ A comprehensive home healthcare management system built with Laravel 12, Inertia
 - Node.js 18+
 - MySQL 8.0+
 - XAMPP (for development)
-
+ and USSD
 ### Steps
 
 1. **Clone & Setup**
@@ -129,19 +118,6 @@ Add to `.env`:
 SMS_API_KEY=atsk_your_api_key_here
 SMS_USERNAME=NyumbaniAfya  # Your Africa's Talking username
 SMS_API_URL=https://api.africastalking.com/version1/messaging
-
-# Airtime Configuration
-AIRTIME_API_KEY=atsk_your_api_key_here
-AIRTIME_USERNAME=NyumbaniAfya
-AIRTIME_CURRENCY=TZS
-AIRTIME_REWARD_AMOUNT=500
-AIRTIME_DEFAULT_PHONE=+255XXXXXXXX
-
-# Voice Configuration
-VOICE_API_KEY=atsk_your_api_key_here
-VOICE_USERNAME=NyumbaniAfya
-VOICE_CALL_FROM=+254711XXXYYY
-VOICE_DEFAULT_PHONE=+255XXXXXXXX
 ```
 
 ### Webhook Configuration (ngrok)
@@ -163,9 +139,6 @@ VOICE_DEFAULT_PHONE=+255XXXXXXXX
 | POST | `/Ussd` | USSD (capital U variant) |
 | POST | `/voice` | Voice callback handler |
 | POST | `/voice/call` | Initiate outbound voice call |
-| POST | `/airtime/validation` | Airtime validation callback |
-| POST | `/airtime/status` | Airtime status callback |
-
 ### Authenticated Client Endpoints
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -177,10 +150,6 @@ VOICE_DEFAULT_PHONE=+255XXXXXXXX
 | GET | `/dashboard/client` | Client dashboard |
 
 ## Usage
-
-### Creating a Booking
-
-**Web Form:**
 1. Login as client
 2. Navigate to "New Booking"
 3. Select service, date, time, and payment method
@@ -249,7 +218,6 @@ System marks payment as completed → Confirmation SMS sent
 - **Phone Validation**: International format enforcement (+255)
 - **Payment Verification**: Transaction reference logging
 - **Webhook Validation**: Africa's Talking callback verification
-
 ## Common Issues & Solutions
 
 ### SMS Not Sending
@@ -281,11 +249,7 @@ npm run dev                          # Development frontend
 npm run build                        # Production build
 ```
 
-### Key Files
-- `app/Services/SmsService.php` - SMS sending logic
-- `app/Services/AirtimeService.php` - Airtime reward logic
-- `app/Services/VoiceService.php` - Voice calling logic
-- `app/Http/Controllers/UssdController.php` - USSD flow logic
+### pp/Http/Controllers/UssdController.php` - USSD flow logic
 - `app/Http/Controllers/AirtimeCallbackController.php` - Webhook handlers
 - `resources/js/Pages/Client/AllBookings.tsx` - Appointments table
 - `resources/js/Pages/Dashboard/Client.tsx` - Client dashboard
@@ -304,10 +268,7 @@ For issues or questions:
 4. Check SMS delivery reports in Africa's Talking Dashboard
 
 ## License
-
-This project is licensed under the MIT License.
-
-## Contributors
+Http/Controllers/UssdController.php` - USSD flow logic
 
 - Abdul Rahman Hussein - Initial implementation
 - Development team - Continued enhancements

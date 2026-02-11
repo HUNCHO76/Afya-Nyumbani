@@ -254,7 +254,7 @@ const AdministratorDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Replace the existing NavigationHeader with the new Navigation component */}
-      <Navigation isSidebarCollapsed={isSidebarCollapsed} />
+      <Navigation isSidebarCollapsed={isSidebarCollapsed} onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
       
       <MainSidebar
         isCollapsed={isSidebarCollapsed}

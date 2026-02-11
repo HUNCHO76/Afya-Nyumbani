@@ -21,11 +21,11 @@ class PractitionerDashboardController extends Controller
             abort(403, 'Practitioner profile not found');
         }
 
-        // Today's assigned bookings (only pending should appear on today's schedule)
+        // Today's assigned bookings (pending, confirmed, in_progress)
         $todaysBookings = Booking::with(['client.user', 'service'])
             ->where('assigned_practitioner_id', $practitioner->id)
             ->whereDate('booking_date', now())
-            ->whereIn('status', ['pending'])
+            ->whereIn('status', ['pending', 'confirmed', 'in_progress'])
             ->orderBy('booking_time')
             ->get();
 

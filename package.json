@@ -4,6 +4,7 @@
     "type": "module",
     "scripts": {
         "build": "tsc && vite build",
+        "build:skip-check": "vite build",
         "dev": "vite"
     },
     "devDependencies": {

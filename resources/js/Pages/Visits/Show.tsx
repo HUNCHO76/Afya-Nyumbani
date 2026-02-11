@@ -29,7 +29,7 @@ const VisitShow = ({ visit }: any) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation isSidebarCollapsed={isSidebarCollapsed} />
+      <Navigation isSidebarCollapsed={isSidebarCollapsed} onToggleSidebar={handleToggleSidebar} />
       <MainSidebar isCollapsed={isSidebarCollapsed} onToggleCollapse={handleToggleSidebar} />
 
       <div className={`transition-all duration-300 ease-out pt-16 ${isSidebarCollapsed ? 'lg:ml-[88px]' : 'lg:ml-[280px]'}`}>
